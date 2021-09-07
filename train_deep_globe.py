@@ -38,7 +38,6 @@ if os.environ.get('debug',  False):
 
 else:
     num_worker = 10
-num_worker = 10
 
 
 mode = args.mode # 1: train global; 2: train local from global; 3: train global from local
