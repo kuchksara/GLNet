@@ -32,9 +32,10 @@ if not os.path.isdir(log_path): os.mkdir(log_path)
 task_name = args.task_name
 print(task_name)
 ###################################
-num_worker = 0
-if not num_worker:
+if os.environ.get('debug',  False):
+    num_worker = 0
     print('num worker is set  to zero for debugging')
+
 mode = args.mode # 1: train global; 2: train local from global; 3: train global from local
 evaluation = args.evaluation
 test = evaluation and False
