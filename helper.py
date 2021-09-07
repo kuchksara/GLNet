@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import cv2
 import numpy as np
 import torch
@@ -52,8 +53,11 @@ def masks_transform(masks, numpy=False):
     if numpy:
         return targets
     else:
-        return torch.from_numpy(targets).long().cuda()
-
+        if os.environ.get('debug', False):
+            return torch.from_numpy(targets).long()
+        else:
+            return torch.from_numpy(targets).long().cuda()
+        # remove cuda
 def images_transform(images):
     '''
     images: list of PIL images
@@ -61,8 +65,12 @@ def images_transform(images):
     inputs = []
     for img in images:
         inputs.append(transformer(img))
-    inputs = torch.stack(inputs, dim=0).cuda()
-    return inputs
+    inputs = torch.stack(inputs, dim=0)
+    if os.environ.get('debug', False):
+        return inputs
+    else:
+        inputs = torch.stack(inputs, dim=0).cuda()
+    # remove cuda
 
 def get_patch_info(shape, p_size):
     '''
@@ -108,7 +116,11 @@ def global2patch(images, p_size):
                 template[top:top+p_size[0], left:left+p_size[1]] += patch_ones
                 coordinates[i][x * n_y + y] = (1.0 * top / size[0], 1.0 * left / size[1])
                 patches[i][x * n_y + y] = transforms.functional.crop(images[i], top, left, p_size[0], p_size[1])
-        templates.append(Variable(torch.Tensor(template).expand(1, 1, -1, -1)).cuda())
+        if os.environ.get('debug', False):
+            templates.append(Variable(torch.Tensor(template).expand(1, 1, -1, -1)))
+        else:
+            templates.append(Variable(torch.Tensor(template).expand(1, 1, -1, -1)).cuda())
+        # remove cuda
     return patches, coordinates, templates, sizes, ratios
 
 def patch2global(patches, n_class, sizes, coordinates, p_size):
@@ -139,7 +151,11 @@ def template_patch2global(size_g, size_p, n, step):
             y += step
         x += step
         y = 0
-    return Variable(torch.Tensor(template).expand(1, 1, -1, -1)).cuda(), coordinates
+    if os.environ.get('debug', False):
+        return Variable(torch.Tensor(template).expand(1, 1, -1, -1)), coordinates
+    else:
+        return Variable(torch.Tensor(template).expand(1, 1, -1, -1)).cuda(), coordinates
+    # remove cuda
 
 def one_hot_gaussian_blur(index, classes):
     '''
@@ -169,8 +185,9 @@ def collate_test(batch):
 def create_model_load_weights(n_class, mode=1, evaluation=False, path_g=None, path_g2l=None, path_l2g=None):
     model = fpn(n_class)
     model = nn.DataParallel(model)
-    model = model.cuda()
-
+    if not os.environ.get('debug', False):
+        model = model.cuda()
+    #remove cuda
     if (mode == 2 and not evaluation) or (mode == 1 and evaluation):
         # load fixed basic global branch
         partial = torch.load(path_g)
@@ -197,8 +214,14 @@ def create_model_load_weights(n_class, mode=1, evaluation=False, path_g=None, pa
         # load fixed basic global branch
         global_fixed = fpn(n_class)
         global_fixed = nn.DataParallel(global_fixed)
-        global_fixed = global_fixed.cuda()
-        partial = torch.load(path_g)
+        if not os.environ.get('debug', False):
+            global_fixed = global_fixed.cuda()
+        # remove cuda
+        if os.environ.get('debug', False):
+            partial = torch.load(path_g)
+        else:
+            partial = torch.load(path_g, map_location=torch.device('cpu'))
+        # remove cuda
         state = global_fixed.state_dict()
         # 1. filter out unnecessary keys
         pretrained_dict = {k: v for k, v in partial.items() if k in state and "local" not in k}
@@ -209,7 +232,11 @@ def create_model_load_weights(n_class, mode=1, evaluation=False, path_g=None, pa
         global_fixed.eval()
 
     if mode == 3 and evaluation:
-        partial = torch.load(path_l2g)
+        if os.environ.get('debug', False):
+            partial = torch.load(path_l2g, map_location=torch.device('cpu'))
+        else:
+            partial = torch.load(path_l2g)
+        # remove cuda
         state = model.state_dict()
         # 1. filter out unnecessary keys
         pretrained_dict = {k: v for k, v in partial.items() if k in state}# and "global" not in k}
@@ -353,7 +380,11 @@ class Trainer(object):
                 j = 0
                 while j < len(coordinates[i]):
                     label_patches_var = masks_transform(resize(label_patches[i][j : j+self.sub_batch_size], (self.size_p[0] // 4, self.size_p[1] // 4), label=True))
-                    fl = fm_patches[i][j : j+self.sub_batch_size].cuda()
+                    if os.environ.get('debug', False):
+                        fl = fm_patches[i][j : j+self.sub_batch_size]
+                    else:
+                        fl = fm_patches[i][j : j+self.sub_batch_size].cuda()
+                    # remove cuda
                     fg = model.module._crop_global(fm_global[i:i+1], coordinates[i][j:j+self.sub_batch_size], ratios[i])[0]
                     fg = F.interpolate(fg, size=fl.size()[2:], mode='bilinear')
                     output_ensembles = model.module.ensemble(fl, fg)
@@ -506,7 +537,11 @@ class Evaluator(object):
                         for i in range(len(images)):
                             j = 0
                             while j < len(coordinates[i]):
-                                fl = fm_patches[i][j : j+self.sub_batch_size].cuda()
+                                if os.environ.get('debug', False):
+                                    fl = fm_patches[i][j : j+self.sub_batch_size]
+                                else:
+                                    fl = fm_patches[i][j : j+self.sub_batch_size].cuda()
+                                # remove cuda
                                 fg = model.module._crop_global(fm_global[i:i+1], coordinates[i][j:j+self.sub_batch_size], ratios[i])[0]
                                 fg = F.interpolate(fg, size=fl.size()[2:], mode='bilinear')
                                 output_ensembles = model.module.ensemble(fl, fg) # include cordinates

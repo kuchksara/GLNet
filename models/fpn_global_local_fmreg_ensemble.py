@@ -1,3 +1,4 @@
+import os
 from .resnet import resnet50
 import torch.nn as nn
 import torch.nn.functional as F
@@ -298,7 +299,11 @@ class fpn(nn.Module):
         for cnt_b in range(b_bbox):
             grid[cnt_b, :, :, 0] = bbox[cnt_b][0] + (bbox[cnt_b][2] - bbox[cnt_b][0])*gridMap[:, :, 0]
             grid[cnt_b, :, :, 1] = bbox[cnt_b][1] + (bbox[cnt_b][3] - bbox[cnt_b][1])*gridMap[:, :, 1]
-        grid = torch.from_numpy(grid).cuda()
+        if os.environ.get('debug', False):
+            grid = torch.from_numpy(grid)
+        else:
+            grid = torch.from_numpy(grid).cuda()
+        # remove cuda
         return F.grid_sample(fm, grid)
 
     def _crop_global(self, f_global, top_lefts, ratio):
@@ -331,7 +336,11 @@ class fpn(nn.Module):
         b, _, _, _ = f_local.size()
         _, c, H, W = f_global.size() # match global feature size
         if merge is None:
-            merge = torch.zeros((1, c, H, W)).cuda()
+            if os.environ.get('debug', False):
+                merge = torch.zeros((1, c, H, W))
+            else:
+                merge = torch.zeros((1, c, H, W)).cuda()
+            # remove cuda
         h, w = int(np.round(H * ratio[0])), int(np.round(W * ratio[1]))
         for i in range(b):
             index = oped[0] + i

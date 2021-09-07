@@ -41,6 +41,28 @@ def RGB_mapping_to_class(label):
     return classmap
 
 
+def makan_RGB_mapping_to_class(label):
+    l, w = label.shape[0], label.shape[1]
+    classmap = np.zeros(shape=(l, w))
+    indices = np.where(np.all(label == (0, -1, -1), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 1
+    indices = np.where(np.all(label == (-1, -1, 0), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 2
+    indices = np.where(np.all(label == (-1, 0, -1), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 3
+    indices = np.where(np.all(label == (0, -1, 0), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 4
+    indices = np.where(np.all(label == (0, 0, -1), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 5
+    indices = np.where(np.all(label == (-1, -1, -1), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 6
+    indices = np.where(np.all(label == (0, 0, 0), axis=-1))
+    classmap[indices[0].tolist(), indices[1].tolist()] = 0
+    #     plt.imshow(colmap)
+    #     plt.show()
+    return classmap
+
+
 def classToRGB(label):
     l, w = label.shape[0], label.shape[1]
     colmap = np.zeros(shape=(l, w, 3)).astype(np.float32)

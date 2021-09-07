@@ -2,6 +2,7 @@
 # https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/utils.py
 
 import numpy as np
+from dataset.deep_globe import makan_RGB_mapping_to_class
 
 class ConfusionMatrix(object):
 
@@ -20,13 +21,14 @@ class ConfusionMatrix(object):
 
     def update(self, label_trues, label_preds):
         for lt, lp in zip(label_trues, label_preds):
+            lt = makan_RGB_mapping_to_class(lt)
             tmp = self._fast_hist(lt.flatten(), lp.flatten(), self.n_classes)
-            
+
             # iu = np.diag(tmp) / (tmp.sum(axis=1) + tmp.sum(axis=0) - np.diag(tmp))
             # self.iou.append(iu[1])
             # if iu[1] >= 0.65: self.iou_threshold.append(iu[1])
             # else: self.iou_threshold.append(0)
-            
+
             self.confusion_matrix += tmp
 
     def get_scores(self):

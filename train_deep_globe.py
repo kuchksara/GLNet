@@ -30,10 +30,11 @@ if not os.path.isdir(model_path): os.mkdir(model_path)
 log_path = args.log_path
 if not os.path.isdir(log_path): os.mkdir(log_path)
 task_name = args.task_name
-
 print(task_name)
 ###################################
-
+num_worker = 0
+if not num_worker:
+    print('num worker is set  to zero for debugging')
 mode = args.mode # 1: train global; 2: train local from global; 3: train global from local
 evaluation = args.evaluation
 test = evaluation and False
@@ -48,11 +49,11 @@ ids_test = [image_name for image_name in os.listdir(os.path.join(data_path, "off
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dataset_train = DeepGlobe(os.path.join(data_path, "train"), ids_train, label=True, transform=True)
-dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=batch_size, num_workers=10, collate_fn=collate, shuffle=True, pin_memory=True)
+dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=batch_size, num_workers=num_worker, collate_fn=collate, shuffle=True, pin_memory=True)
 dataset_val = DeepGlobe(os.path.join(data_path, "crossvali"), ids_val, label=True)
-dataloader_val = torch.utils.data.DataLoader(dataset=dataset_val, batch_size=batch_size, num_workers=10, collate_fn=collate, shuffle=False, pin_memory=True)
+dataloader_val = torch.utils.data.DataLoader(dataset=dataset_val, batch_size=batch_size, num_workers=num_worker, collate_fn=collate, shuffle=False, pin_memory=True)
 dataset_test = DeepGlobe(os.path.join(data_path, "offical_crossvali"), ids_test, label=False)
-dataloader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=batch_size, num_workers=10, collate_fn=collate_test, shuffle=False, pin_memory=True)
+dataloader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=batch_size, num_workers=num_worker, collate_fn=collate_test, shuffle=False, pin_memory=True)
 
 ##### sizes are (w, h) ##############################
 # make sure margin / 32 is over 1.5 AND size_g is divisible by 4
@@ -65,6 +66,7 @@ print("creating models......")
 path_g = os.path.join(model_path, args.path_g)
 path_g2l = os.path.join(model_path, args.path_g2l)
 path_l2g = os.path.join(model_path, args.path_l2g)
+print(path_g)
 model, global_fixed = create_model_load_weights(n_class, mode, evaluation, path_g=path_g, path_g2l=path_g2l, path_l2g=path_l2g)
 
 ###################################
