@@ -218,9 +218,10 @@ def create_model_load_weights(n_class, mode=1, evaluation=False, path_g=None, pa
             global_fixed = global_fixed.cuda()
         # remove cuda
         if os.environ.get('debug', False):
-            partial = torch.load(path_g)
-        else:
             partial = torch.load(path_g, map_location=torch.device('cpu'))
+
+        else:
+            partial = torch.load(path_g)
         # remove cuda
         state = global_fixed.state_dict()
         # 1. filter out unnecessary keys
