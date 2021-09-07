@@ -1,7 +1,7 @@
 export CUDA_VISIBLE_DEVICES=0
 python train_deep_globe.py \
 --n_class 7 \
---data_path "/Users/makan/Downloads/GLNet/data/" \
+--data_path "/content/drive/My Drive/GLNetOld/data/" \
 --model_path "./saved_models/" \
 --log_path "./runs/" \
 --task_name "eval" \
