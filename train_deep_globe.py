@@ -34,6 +34,8 @@ print(task_name)
 ###################################
 if os.environ.get('debug',  False):
     num_worker = 0
+else:
+    num_worker = 10
     print('num worker is set  to zero for debugging')
 
 mode = args.mode # 1: train global; 2: train local from global; 3: train global from local
